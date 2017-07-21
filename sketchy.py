@@ -11,6 +11,23 @@ class SketchWindow(wx.Window):
         self.lines = []
         self.curLine = []
         self.pos = (0, 0)
+        self.InitBuffer()
+
+    def InitBuffer(self):
+        size = self.GetClientSize()
+        self.buffer = wx.Bitmap(size.width, size.height)
+        dc = wx.BufferedDC(None, self.buffer)
+        dc.SetBackground(wx.Brush(self.GetBackgroundColour()))
+        dc.Clear()
+        self.DrawLines(dc)
+        self.reInitBuffer = False
+
+    def DrawLines(self, dc):
+        for colour, thickness, line in self.lines:
+            pen = wx.Pen(colour, thickness, wx.SOLID)
+            dc.SetPen(pen)
+            for coords in line:
+                dc.DrawLine(*coords)
 
 class SketchFrame(wx.Frame):
     def __init__(self, parent):
