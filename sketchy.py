@@ -13,6 +13,9 @@ class SketchWindow(wx.Window):
         self.pos = (0, 0)
         self.InitBuffer()
 
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
+        self.Bind(wx.EVT_LEFT_UP, self.OnLeftUp)
+
     def InitBuffer(self):
         size = self.GetClientSize()
         self.buffer = wx.Bitmap(size.width, size.height)
@@ -28,6 +31,19 @@ class SketchWindow(wx.Window):
             dc.SetPen(pen)
             for coords in line:
                 dc.DrawLine(*coords)
+
+    def OnLeftDown(self, event):
+        self.curLine = []
+        self.pos = event.GetPosition()
+        self.CaptureMouse()
+
+    def OnLeftUp(self, event):
+        if self.HasCapture():
+            self.lines.append((self.color, 
+                               self.thickness, 
+                               self.curLine))
+            self.curLine = []
+            self.ReleaseMouse()
 
 class SketchFrame(wx.Frame):
     def __init__(self, parent):
