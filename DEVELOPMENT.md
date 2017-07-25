@@ -368,3 +368,12 @@ if __name__ == '__main__':
 ![sketchy-img](screenshots/sketchy-05.png)
 
 Also, type `$ git checkout 2a` to perform a checkout of this version.
+
+## Rename main script so `SketchWindow` is importable
+
+Rewrite main script so it's possible to import `SkecthWindow` class. 
+To do that, just rename the old main script to `base.py` using Git:
+
+`$ git mv sketchy.py base.py`
+
+Also, type `$ git checkout 2b` to perform a checkout of this version.
