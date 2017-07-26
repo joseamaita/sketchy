@@ -10,6 +10,12 @@ class SketchFrame(wx.Frame):
                           "Sketch Frame", 
                           size = (800, 600))
         self.sketch = SketchWindow(self, -1)
+        self.sketch.Bind(wx.EVT_MOTION, self.OnSketchMotion)
+        self.statusbar = self.CreateStatusBar()
+
+    def OnSketchMotion(self, event):
+        self.statusbar.SetStatusText(str(event.GetPosition()))
+        event.Skip()
 
 class App(wx.App):
     def OnInit(self):
