@@ -12,9 +12,19 @@ class SketchFrame(wx.Frame):
         self.sketch = SketchWindow(self, -1)
         self.sketch.Bind(wx.EVT_MOTION, self.OnSketchMotion)
         self.statusbar = self.CreateStatusBar()
+        self.statusbar.SetFieldsCount(3)
+        self.statusbar.SetStatusWidths([-1, -2, -3])
 
     def OnSketchMotion(self, event):
-        self.statusbar.SetStatusText(str(event.GetPosition()))
+        self.statusbar.SetStatusText("Pos: {}".\
+                                     format(str(event.GetPosition())), 
+                                     0)
+        self.statusbar.SetStatusText("Current Pts: {}".\
+                                     format(len(self.sketch.curLine)), 
+                                     1)
+        self.statusbar.SetStatusText("Line Count: {}".\
+                                     format(len(self.sketch.lines)), 
+                                     2)
         event.Skip()
 
 class App(wx.App):

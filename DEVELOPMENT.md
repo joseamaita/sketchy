@@ -465,3 +465,69 @@ if __name__ == '__main__':
 ![sketchy-img](screenshots/sketchy-07.png)
 
 Also, type `$ git checkout 3a` to perform a checkout of this version.
+
+## Configure status bar to display three text fields
+
+* Create three status text fields in the status bar by calling the 
+method `SetFieldsCount(3)`.
+* Adjust the sizes of the text fields in the status bar by calling the 
+method `SetStatusWidths([-1, -2, -3])`.
+* Add support for two more status fields, one which shows the number of 
+points in the current line being drawn, the other shows the number of 
+lines in the current sketch.
+
+The application's source code is:
+
+```python
+#!/usr/bin/env python3
+import wx
+from base import SketchWindow
+
+class SketchFrame(wx.Frame):
+    def __init__(self, parent):
+        wx.Frame.__init__(self, 
+                          parent, 
+                          -1, 
+                          "Sketch Frame", 
+                          size = (800, 600))
+        self.sketch = SketchWindow(self, -1)
+        self.sketch.Bind(wx.EVT_MOTION, self.OnSketchMotion)
+        self.statusbar = self.CreateStatusBar()
+        self.statusbar.SetFieldsCount(3)
+        self.statusbar.SetStatusWidths([-1, -2, -3])
+
+    def OnSketchMotion(self, event):
+        self.statusbar.SetStatusText("Pos: {}".\
+                                     format(str(event.GetPosition())), 
+                                     0)
+        self.statusbar.SetStatusText("Current Pts: {}".\
+                                     format(len(self.sketch.curLine)), 
+                                     1)
+        self.statusbar.SetStatusText("Line Count: {}".\
+                                     format(len(self.sketch.lines)), 
+                                     2)
+        event.Skip()
+
+class App(wx.App):
+    def OnInit(self):
+        self.frame = SketchFrame(None)
+        self.frame.Show(True)
+        self.SetTopWindow(self.frame)
+        return True
+
+def main():
+    app = App(False)
+    app.MainLoop()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+![sketchy-img](screenshots/sketchy-08.png)
+
+![sketchy-img](screenshots/sketchy-09.png)
+
+![sketchy-img](screenshots/sketchy-10.png)
+
+Also, type `$ git checkout 3b` to perform a checkout of this version.
