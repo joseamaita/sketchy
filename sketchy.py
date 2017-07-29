@@ -13,6 +13,7 @@ class SketchFrame(wx.Frame):
         self.sketch.Bind(wx.EVT_MOTION, self.OnSketchMotion)
         self.initStatusBar()
         self.createMenuBar()
+        self.createToolBar()
 
     def initStatusBar(self):
         self.statusbar = self.CreateStatusBar()
@@ -88,6 +89,68 @@ class SketchFrame(wx.Frame):
         menuItem = menu.Append(-1, label, status, kind)
         self.Bind(wx.EVT_MENU, handler, menuItem)
 
+    def createToolBar(self):
+        toolbar = self.CreateToolBar()
+        for each in self.toolbarData():
+            self.createTool(toolbar, *each)
+        toolbar.AddSeparator()
+        for each in self.toolbarColorData():
+            self.createColorTool(toolbar, each)
+        toolbar.Realize()
+
+    def createTool(self, toolbar, label, filename, help, handler):
+        if not label:
+            toolbar.AddSeparator()
+            return
+        bitmap = wx.Image(filename, wx.BITMAP_TYPE_BMP).ConvertToBitmap()
+        tool = toolbar.AddTool(-1, 
+                               label, 
+                               bitmap, 
+                               wx.NullBitmap, 
+                               kind = wx.ITEM_NORMAL, 
+                               shortHelpString = help, 
+                               longHelpString = "", 
+                               clientData = None)
+        self.Bind(wx.EVT_MENU, handler, tool)
+
+    def toolbarData(self):
+        return (("New", 
+                 "files/new.bmp", 
+                 "Create new sketch", 
+                 self.OnNew),
+                ("", "", "", ""), 
+                ("Open", 
+                 "files/open.bmp", 
+                 "Open existing sketch", 
+                 self.OnOpen),
+                ("Save", 
+                 "files/save.bmp", 
+                 "Save existing sketch", 
+                 self.OnSave))
+
+    def createColorTool(self, toolbar, color):
+        bmp = self.MakeBitmap(color)
+        tool = toolbar.AddRadioTool(-1, 
+                                    label = "", 
+                                    bitmap1 = bmp, 
+                                    bmpDisabled = wx.NullBitmap, 
+                                    shortHelp = color, 
+                                    longHelp = "", 
+                                    clientData = None)
+        self.Bind(wx.EVT_MENU, self.OnColor, tool)
+
+    def MakeBitmap(self, color):
+        bmp = wx.Bitmap(16, 15)
+        dc = wx.MemoryDC()
+        dc.SelectObject(bmp)
+        dc.SetBackground(wx.Brush(color))
+        dc.Clear()
+        dc.SelectObject(wx.NullBitmap)
+        return bmp
+
+    def toolbarColorData(self):
+        return ("Black", "Red", "Green", "Blue")
+
     def OnNew(self, event): pass
     def OnOpen(self, event): pass
     def OnSave(self, event): pass
@@ -96,7 +159,12 @@ class SketchFrame(wx.Frame):
         menubar = self.GetMenuBar()
         itemId = event.GetId()
         item = menubar.FindItemById(itemId)
-        color = item.GetLabel()
+        if not item:
+            toolbar = self.GetToolBar()
+            item = toolbar.FindById(itemId)
+            color = item.GetShortHelp()
+        else:
+            color = item.GetLabel()
         self.sketch.SetColor(color)
 
     def OnCloseWindow(self, event):
