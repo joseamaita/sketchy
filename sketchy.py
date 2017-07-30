@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 import wx
+import pickle, os
 from base import SketchWindow
 
 class SketchFrame(wx.Frame):
+    wildcard = "Sketch files (*.sketch)|*.sketch|All files (*.*)|*.*"
+    
     def __init__(self, parent):
+        self.title = "Sketch Frame"
         wx.Frame.__init__(self, 
                           parent, 
                           -1, 
-                          "Sketch Frame", 
+                          self.title, 
                           size = (800, 600))
+        self.filename = ""
         self.sketch = SketchWindow(self, -1)
         self.sketch.Bind(wx.EVT_MOTION, self.OnSketchMotion)
         self.initStatusBar()
@@ -153,7 +158,6 @@ class SketchFrame(wx.Frame):
 
     def OnNew(self, event): pass
     def OnOpen(self, event): pass
-    def OnSave(self, event): pass
 
     def OnColor(self, event):
         menubar = self.GetMenuBar()
@@ -169,6 +173,34 @@ class SketchFrame(wx.Frame):
 
     def OnCloseWindow(self, event):
         self.Destroy()
+
+    def OnSave(self, event):
+        if not self.filename:
+            self.OnSaveAs(event)
+        else:
+            self.SaveFile()
+
+    def OnSaveAs(self, event):
+        dlg = wx.FileDialog(self, 
+                            "Save sketch as...", 
+                            os.getcwd(), 
+                            style = wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT, 
+                            wildcard = self.wildcard)
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()
+            if not os.path.splitext(filename)[1]:
+                filename = filename + '.sketch'
+            self.filename = filename
+            self.SaveFile()
+            self.SetTitle(self.title + ' -- ' + self.filename)
+        dlg.Destroy()
+
+    def SaveFile(self):
+        if self.filename:
+            data = self.sketch.GetLinesData()
+            f = open(self.filename, 'wb')
+            pickle.dump(data, f)
+            f.close()
 
 class App(wx.App):
     def OnInit(self):
