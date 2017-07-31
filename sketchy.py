@@ -202,6 +202,31 @@ class SketchFrame(wx.Frame):
             pickle.dump(data, f)
             f.close()
 
+    def OnOpen(self, event):
+        dlg = wx.FileDialog(self, 
+                            "Open sketch file...", 
+                            os.getcwd(), 
+                            style = wx.FD_OPEN, 
+                            wildcard = self.wildcard)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.filename = dlg.GetPath()
+            self.ReadFile()
+            self.SetTitle(self.title + ' -- ' + self.filename)
+        dlg.Destroy()
+
+    def ReadFile(self):
+        if self.filename:
+            try:
+                f = open(self.filename, 'rb')
+                data = pickle.load(f)
+                f.close()
+                self.sketch.SetLinesData(data)
+            except (EOFError, pickle.UnpicklingError) as e:
+                wx.MessageBox("{} is not a sketch file.".\
+                              format(self.filename), 
+                              "oops!", 
+                              style = wx.OK | wx.ICON_EXCLAMATION)
+
 class App(wx.App):
     def OnInit(self):
         self.frame = SketchFrame(None)
