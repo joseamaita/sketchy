@@ -59,7 +59,11 @@ class SketchFrame(wx.Frame):
                                      ("&Blue", 
                                       "", 
                                       self.OnColor, 
-                                      wx.ITEM_RADIO))), 
+                                      wx.ITEM_RADIO), 
+                                      ("&Other...", 
+                                      "", 
+                                      self.OnOtherColor, 
+                                      wx.ITEM_RADIO))),
                           ("", "", ""),
                           ("&Quit", "Quit", self.OnCloseWindow)))]
 
@@ -226,6 +230,13 @@ class SketchFrame(wx.Frame):
                               format(self.filename), 
                               "oops!", 
                               style = wx.OK | wx.ICON_EXCLAMATION)
+
+    def OnOtherColor(self, event):
+        dlg = wx.ColourDialog(self)
+        dlg.GetColourData().SetChooseFull(True)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.sketch.SetColor(dlg.GetColourData().GetColour())
+        dlg.Destroy()
 
 class App(wx.App):
     def OnInit(self):
