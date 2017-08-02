@@ -1661,3 +1661,395 @@ if __name__ == '__main__':
 ![sketchy-img](screenshots/sketchy-29.png)
 
 Also, type `$ git checkout 4c` to perform a checkout of this version.
+
+## Lay out widgets using a sizer (create control panel)
+
+The idea here is to add a control panel to the application. The control 
+panel contains buttons for setting the color and thickness of the line. 
+To achieve this, first, create a `controlpanel` module like this:
+
+* Import `wx` module.
+* Import `buttons` module from `wx.lib`.
+* Create `ControlPanel` class (panel that inherits from `wx.Panel`) and 
+add these methods/functions: `__init__`, `createColorGrid`
+, `createThicknessGrid`, `layout`, `OnSetColour`, `OnSetThickness`.
+* Use instances of both `wx.GridSizer` (for the buttons) 
+and `wx.BoxSizer` (for the rest of the layout).
+
+The module's source code is:
+
+```python
+import wx
+from wx.lib import buttons
+
+class ControlPanel(wx.Panel):
+
+    BMP_SIZE = 16
+    BMP_BORDER = 3
+    NUM_COLS = 4
+    SPACING = 4
+
+    colorList = ('Black', 
+                 'Yellow', 
+                 'Red', 
+                 'Green', 
+                 'Blue', 
+                 'Purple', 
+                 'Brown', 
+                 'Aquamarine', 
+                 'Forest Green', 
+                 'Light Blue', 
+                 'Goldenrod', 
+                 'Cyan', 
+                 'Orange', 
+                 'Navy', 
+                 'Dark Grey', 
+                 'Light Grey')
+    maxThickness = 16
+
+    def __init__(self, parent, ID, sketch):
+        wx.Panel.__init__(self, parent, ID, style=wx.RAISED_BORDER)
+        self.sketch = sketch
+        buttonSize = (self.BMP_SIZE + 2 * self.BMP_BORDER, 
+                      self.BMP_SIZE + 2 * self.BMP_BORDER)
+        colorGrid = self.createColorGrid(parent, buttonSize)
+        thicknessGrid = self.createThicknessGrid(buttonSize)
+        self.layout(colorGrid, thicknessGrid)
+
+    def createColorGrid(self, parent, buttonSize):
+        self.colorMap = {}
+        self.colorButtons = {}
+        colorGrid = wx.GridSizer(cols=self.NUM_COLS, hgap=2, vgap=2)
+        for eachColor in self.colorList:
+            bmp = parent.MakeBitmap(eachColor)
+            b = buttons.GenBitmapToggleButton(self, 
+                                              -1, 
+                                              bmp, 
+                                              size = buttonSize)
+            b.SetBezelWidth(1)
+            b.SetUseFocusIndicator(False)
+            self.Bind(wx.EVT_BUTTON, self.OnSetColour, b)
+            colorGrid.Add(b, 0)
+            self.colorMap[b.GetId()] = eachColor
+            self.colorButtons[eachColor] = b
+        self.colorButtons[self.colorList[0]].SetToggle(True)
+        return colorGrid
+
+    def createThicknessGrid(self, buttonSize):
+        self.thicknessIdMap = {}
+        self.thicknessButtons = {}
+        thicknessGrid = wx.GridSizer(cols=self.NUM_COLS, hgap=2, vgap=2)
+        for x in range(1, self.maxThickness + 1):
+            b = buttons.GenToggleButton(self, 
+                                        -1, 
+                                        str(x), 
+                                        size = buttonSize)
+            b.SetBezelWidth(1)
+            b.SetUseFocusIndicator(False)
+            self.Bind(wx.EVT_BUTTON, self.OnSetThickness, b)
+            thicknessGrid.Add(b, 0)
+            self.thicknessIdMap[b.GetId()] = x
+            self.thicknessButtons[x] = b
+        self.thicknessButtons[1].SetToggle(True)
+        return thicknessGrid
+
+    def layout(self, colorGrid, thicknessGrid):
+        box = wx.BoxSizer(wx.VERTICAL)
+        box.Add(colorGrid, 0, wx.ALL, self.SPACING)
+        box.Add(thicknessGrid, 0, wx.ALL, self.SPACING)
+        self.SetSizer(box)
+        box.Fit(self)
+
+    def OnSetColour(self, event):
+        color = self.colorMap[event.GetId()]
+        if color != self.sketch.color:
+            self.colorButtons[self.sketch.color].SetToggle(False)
+        self.sketch.SetColor(color)
+
+    def OnSetThickness(self, event):
+        thickness = self.thicknessIdMap[event.GetId()]
+        if thickness != self.sketch.thickness:
+            self.thicknessButtons[self.sketch.thickness].\
+            SetToggle(False)
+        self.sketch.SetThickness(thickness)
+```
+
+Then, modify the application by doing this:
+
+* Import `ControlPanel` class from `controlpanel` module.
+* Create the panel by calling the method `createPanel` and add these 
+methods and/or functions: `createPanel`.
+
+The application's source code is:
+
+```python
+#!/usr/bin/env python3
+import wx
+import pickle, os
+from base import SketchWindow
+from controlpanel import ControlPanel
+
+class SketchFrame(wx.Frame):
+    wildcard = "Sketch files (*.sketch)|*.sketch|All files (*.*)|*.*"
+    
+    def __init__(self, parent):
+        self.title = "Sketch Frame"
+        wx.Frame.__init__(self, 
+                          parent, 
+                          -1, 
+                          self.title, 
+                          size = (800, 600))
+        self.filename = ""
+        self.sketch = SketchWindow(self, -1)
+        self.sketch.Bind(wx.EVT_MOTION, self.OnSketchMotion)
+        self.initStatusBar()
+        self.createMenuBar()
+        self.createToolBar()
+        self.createPanel()
+
+    def initStatusBar(self):
+        self.statusbar = self.CreateStatusBar()
+        self.statusbar.SetFieldsCount(3)
+        self.statusbar.SetStatusWidths([-1, -2, -3])
+
+    def OnSketchMotion(self, event):
+        self.statusbar.SetStatusText("Pos: {}".\
+                                     format(str(event.GetPosition())), 
+                                     0)
+        self.statusbar.SetStatusText("Current Pts: {}".\
+                                     format(len(self.sketch.curLine)), 
+                                     1)
+        self.statusbar.SetStatusText("Line Count: {}".\
+                                     format(len(self.sketch.lines)), 
+                                     2)
+        event.Skip()
+
+    def menuData(self):
+        return [("&File", (
+                          ("&New", "New Sketch file", self.OnNew), 
+                          ("&Open", "Open sketch file", self.OnOpen), 
+                          ("&Save", "Save sketch file", self.OnSave), 
+                          ("", "", ""), 
+                          ("&Color", (
+                                     ("&Black", 
+                                      "", 
+                                      self.OnColor, 
+                                      wx.ITEM_RADIO), 
+                                     ("&Red", 
+                                      "", 
+                                      self.OnColor, 
+                                      wx.ITEM_RADIO), 
+                                     ("&Green", 
+                                      "", 
+                                      self.OnColor, 
+                                      wx.ITEM_RADIO), 
+                                     ("&Blue", 
+                                      "", 
+                                      self.OnColor, 
+                                      wx.ITEM_RADIO), 
+                                      ("&Other...", 
+                                      "", 
+                                      self.OnOtherColor, 
+                                      wx.ITEM_RADIO))),
+                          ("", "", ""),
+                          ("&Quit", "Quit", self.OnCloseWindow)))]
+
+    def createMenuBar(self):
+        menuBar = wx.MenuBar()
+        for eachMenuData in self.menuData():
+            menuLabel = eachMenuData[0]
+            menuItems = eachMenuData[1]
+            menuBar.Append(self.createMenu(menuItems), menuLabel)
+        self.SetMenuBar(menuBar)
+
+    def createMenu(self, menuData):
+        menu = wx.Menu()
+        for eachItem in menuData:
+            if len(eachItem) == 2:
+                label = eachItem[0]
+                subMenu = self.createMenu(eachItem[1])
+                menu.Append(wx.NewId(), label, subMenu)
+            else:
+                self.createMenuItem(menu, *eachItem)
+        return menu
+
+    def createMenuItem(self, 
+                       menu, 
+                       label, 
+                       status, 
+                       handler, 
+                       kind = wx.ITEM_NORMAL):
+        if not label:
+            menu.AppendSeparator()
+            return
+        menuItem = menu.Append(-1, label, status, kind)
+        self.Bind(wx.EVT_MENU, handler, menuItem)
+
+    def createToolBar(self):
+        toolbar = self.CreateToolBar()
+        for each in self.toolbarData():
+            self.createTool(toolbar, *each)
+        toolbar.AddSeparator()
+        for each in self.toolbarColorData():
+            self.createColorTool(toolbar, each)
+        toolbar.Realize()
+
+    def createTool(self, toolbar, label, filename, help, handler):
+        if not label:
+            toolbar.AddSeparator()
+            return
+        bitmap = wx.Image(filename, wx.BITMAP_TYPE_BMP).ConvertToBitmap()
+        tool = toolbar.AddTool(-1, 
+                               label, 
+                               bitmap, 
+                               wx.NullBitmap, 
+                               kind = wx.ITEM_NORMAL, 
+                               shortHelpString = help, 
+                               longHelpString = "", 
+                               clientData = None)
+        self.Bind(wx.EVT_MENU, handler, tool)
+
+    def toolbarData(self):
+        return (("New", 
+                 "files/new.bmp", 
+                 "Create new sketch", 
+                 self.OnNew),
+                ("", "", "", ""), 
+                ("Open", 
+                 "files/open.bmp", 
+                 "Open existing sketch", 
+                 self.OnOpen),
+                ("Save", 
+                 "files/save.bmp", 
+                 "Save existing sketch", 
+                 self.OnSave))
+
+    def createColorTool(self, toolbar, color):
+        bmp = self.MakeBitmap(color)
+        tool = toolbar.AddRadioTool(-1, 
+                                    label = "", 
+                                    bitmap1 = bmp, 
+                                    bmpDisabled = wx.NullBitmap, 
+                                    shortHelp = color, 
+                                    longHelp = "", 
+                                    clientData = None)
+        self.Bind(wx.EVT_MENU, self.OnColor, tool)
+
+    def MakeBitmap(self, color):
+        bmp = wx.Bitmap(16, 15)
+        dc = wx.MemoryDC()
+        dc.SelectObject(bmp)
+        dc.SetBackground(wx.Brush(color))
+        dc.Clear()
+        dc.SelectObject(wx.NullBitmap)
+        return bmp
+
+    def toolbarColorData(self):
+        return ("Black", "Red", "Green", "Blue")
+
+    def OnNew(self, event): pass
+    def OnOpen(self, event): pass
+
+    def OnColor(self, event):
+        menubar = self.GetMenuBar()
+        itemId = event.GetId()
+        item = menubar.FindItemById(itemId)
+        if not item:
+            toolbar = self.GetToolBar()
+            item = toolbar.FindById(itemId)
+            color = item.GetShortHelp()
+        else:
+            color = item.GetLabel()
+        self.sketch.SetColor(color)
+
+    def OnCloseWindow(self, event):
+        self.Destroy()
+
+    def OnSave(self, event):
+        if not self.filename:
+            self.OnSaveAs(event)
+        else:
+            self.SaveFile()
+
+    def OnSaveAs(self, event):
+        dlg = wx.FileDialog(self, 
+                            "Save sketch as...", 
+                            os.getcwd(), 
+                            style = wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT, 
+                            wildcard = self.wildcard)
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()
+            if not os.path.splitext(filename)[1]:
+                filename = filename + '.sketch'
+            self.filename = filename
+            self.SaveFile()
+            self.SetTitle(self.title + ' -- ' + self.filename)
+        dlg.Destroy()
+
+    def SaveFile(self):
+        if self.filename:
+            data = self.sketch.GetLinesData()
+            f = open(self.filename, 'wb')
+            pickle.dump(data, f)
+            f.close()
+
+    def OnOpen(self, event):
+        dlg = wx.FileDialog(self, 
+                            "Open sketch file...", 
+                            os.getcwd(), 
+                            style = wx.FD_OPEN, 
+                            wildcard = self.wildcard)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.filename = dlg.GetPath()
+            self.ReadFile()
+            self.SetTitle(self.title + ' -- ' + self.filename)
+        dlg.Destroy()
+
+    def ReadFile(self):
+        if self.filename:
+            try:
+                f = open(self.filename, 'rb')
+                data = pickle.load(f)
+                f.close()
+                self.sketch.SetLinesData(data)
+            except (EOFError, pickle.UnpicklingError) as e:
+                wx.MessageBox("{} is not a sketch file.".\
+                              format(self.filename), 
+                              "oops!", 
+                              style = wx.OK | wx.ICON_EXCLAMATION)
+
+    def OnOtherColor(self, event):
+        dlg = wx.ColourDialog(self)
+        dlg.GetColourData().SetChooseFull(True)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.sketch.SetColor(dlg.GetColourData().GetColour())
+        dlg.Destroy()
+
+    def createPanel(self):
+        controlPanel = ControlPanel(self, -1, self.sketch)
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        box.Add(controlPanel, 0, wx.EXPAND)
+        box.Add(self.sketch, 1, wx.EXPAND)
+        self.SetSizer(box)
+
+class App(wx.App):
+    def OnInit(self):
+        self.frame = SketchFrame(None)
+        self.frame.Show(True)
+        self.SetTopWindow(self.frame)
+        return True
+
+def main():
+    app = App(False)
+    app.MainLoop()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+![sketchy-img](screenshots/sketchy-30.png)
+
+![sketchy-img](screenshots/sketchy-31.png)
+
+Also, type `$ git checkout 5a` to perform a checkout of this version.

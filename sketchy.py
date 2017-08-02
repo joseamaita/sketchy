@@ -2,6 +2,7 @@
 import wx
 import pickle, os
 from base import SketchWindow
+from controlpanel import ControlPanel
 
 class SketchFrame(wx.Frame):
     wildcard = "Sketch files (*.sketch)|*.sketch|All files (*.*)|*.*"
@@ -19,6 +20,7 @@ class SketchFrame(wx.Frame):
         self.initStatusBar()
         self.createMenuBar()
         self.createToolBar()
+        self.createPanel()
 
     def initStatusBar(self):
         self.statusbar = self.CreateStatusBar()
@@ -237,6 +239,13 @@ class SketchFrame(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
             self.sketch.SetColor(dlg.GetColourData().GetColour())
         dlg.Destroy()
+
+    def createPanel(self):
+        controlPanel = ControlPanel(self, -1, self.sketch)
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        box.Add(controlPanel, 0, wx.EXPAND)
+        box.Add(self.sketch, 1, wx.EXPAND)
+        self.SetSizer(box)
 
 class App(wx.App):
     def OnInit(self):
