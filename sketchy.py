@@ -3,6 +3,7 @@ import wx
 import pickle, os
 from base import SketchWindow
 from controlpanel import ControlPanel
+from aboutbox import SketchAbout
 
 class SketchFrame(wx.Frame):
     wildcard = "Sketch files (*.sketch)|*.sketch|All files (*.*)|*.*"
@@ -66,7 +67,8 @@ class SketchFrame(wx.Frame):
                                       "", 
                                       self.OnOtherColor, 
                                       wx.ITEM_RADIO))),
-                          ("", "", ""),
+                          ("", "", ""), 
+                          ("About...", "'About' window", self.OnAbout),
                           ("&Quit", "Quit", self.OnCloseWindow)))]
 
     def createMenuBar(self):
@@ -246,6 +248,11 @@ class SketchFrame(wx.Frame):
         box.Add(controlPanel, 0, wx.EXPAND)
         box.Add(self.sketch, 1, wx.EXPAND)
         self.SetSizer(box)
+
+    def OnAbout(self, event):
+        dlg = SketchAbout(self)
+        dlg.ShowModal()
+        dlg.Destroy()
 
 class App(wx.App):
     def OnInit(self):
