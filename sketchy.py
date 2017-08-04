@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import wx
+import wx.adv
 import pickle, os
 from base import SketchWindow
 from controlpanel import ControlPanel
@@ -256,6 +257,17 @@ class SketchFrame(wx.Frame):
 
 class App(wx.App):
     def OnInit(self):
+        bmp = wx.Bitmap('files/splash.png', wx.BITMAP_TYPE_PNG)
+        splash = wx.adv.SplashScreen(bmp, 
+                                     wx.adv.SPLASH_CENTRE_ON_SCREEN | \
+                                     wx.adv.SPLASH_TIMEOUT, 
+                                     6000, 
+                                     None, 
+                                     -1, 
+                                     wx.DefaultPosition, 
+                                     wx.DefaultSize, 
+                                     wx.BORDER_SIMPLE | wx.STAY_ON_TOP)
+        wx.Yield()
         self.frame = SketchFrame(None)
         self.frame.Show(True)
         self.SetTopWindow(self.frame)
